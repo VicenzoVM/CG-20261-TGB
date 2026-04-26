@@ -13,28 +13,36 @@
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
 int setupShader();
-int loadSimpleOBJ(std::string filePATH, int &nVertices);
+GLuint loadSimpleOBJ(std::string filePATH, int &nVertices);
+void applyScaleDelta(int objectIndex, const glm::vec3& delta);
+void adjustMaterial(float direction);
+void updateWindowTitle(GLFWwindow* window);
+float clampFloat(float value, float minValue, float maxValue);
 
 const GLuint WIDTH = 800, HEIGHT = 600;
 
 const GLchar* vertexShaderSource = R"glsl(#version 330 core
 layout (location = 0) in vec3 position;
+layout (location = 1) in vec2 texCoord;
 layout (location = 2) in vec3 normal;
 uniform mat4 model;
 uniform mat4 projection;
 uniform mat4 view;
 out vec3 fragPos;
+out vec2 fragTexCoord;
 out vec3 scaledNormal;
 void main()
 {
     gl_Position = projection * view * model * vec4(position, 1.0);
     fragPos = vec3(model * vec4(position, 1.0)); 
+    fragTexCoord = texCoord;
     scaledNormal = mat3(transpose(inverse(model))) * normal;
 }
 )glsl";
 
 const GLchar* fragmentShaderSource = R"glsl(#version 330 core
 in vec3 fragPos;
+in vec2 fragTexCoord;
 in vec3 scaledNormal;
 uniform float ka;
 uniform float kd;
@@ -61,10 +69,23 @@ void main()
 )glsl";
 
 bool perspective = true;
+bool wireframeOverlay = false;
 int selectedObject = 0;
 glm::vec3 pos[2] = {glm::vec3(-1.5f, 0.0f, 0.0f), glm::vec3(1.5f, 0.0f, 0.0f)};
 glm::vec3 scale[2] = {glm::vec3(1.0f), glm::vec3(1.0f)};
 glm::vec3 rot[2] = {glm::vec3(0.0f), glm::vec3(0.0f)};
+glm::vec3 lightPos(-2.0f, 5.0f, 2.0f);
+float kaValue = 0.2f;
+float kdValue = 0.7f;
+float ksValue = 0.5f;
+float qValue = 32.0f;
+int selectedMaterial = 0;
+
+const float TRANSFORM_STEP = 0.1f;
+const float ROTATION_STEP = 5.0f;
+const float MIN_SCALE = 0.1f;
+const float MATERIAL_STEP = 0.05f;
+const float SHININESS_STEP = 4.0f;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
 float deltaTime = 0.0f;
@@ -87,6 +108,7 @@ int main()
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    updateWindowTitle(window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) return -1;
 
@@ -100,11 +122,6 @@ int main()
     suzanne.VAO = loadSimpleOBJ("../assets/Modelos3D/Suzanne.obj", suzanne.nVertices);
     cube.VAO = loadSimpleOBJ("../assets/Modelos3D/Cube.obj", cube.nVertices);
 
-    glUniform1f(glGetUniformLocation(shaderID, "ka"), 0.2f);
-    glUniform1f(glGetUniformLocation(shaderID, "kd"), 0.7f);
-    glUniform1f(glGetUniformLocation(shaderID, "ks"), 0.5f);
-    glUniform1f(glGetUniformLocation(shaderID, "q"), 32.0f);
-    glUniform3f(glGetUniformLocation(shaderID, "lightPos"), -2.0f, 5.0f, 2.0f);
     glUniform3f(glGetUniformLocation(shaderID, "lightColor"), 1.0f, 1.0f, 1.0f);
 
     while (!glfwWindowShouldClose(window))
@@ -122,6 +139,12 @@ int main()
         if(glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS) camera.processKeyboard("LEFT",deltaTime);
         if(glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS) camera.processKeyboard("RIGHT",deltaTime);
 
+        glUniform1f(glGetUniformLocation(shaderID, "ka"), kaValue);
+        glUniform1f(glGetUniformLocation(shaderID, "kd"), kdValue);
+        glUniform1f(glGetUniformLocation(shaderID, "ks"), ksValue);
+        glUniform1f(glGetUniformLocation(shaderID, "q"), qValue);
+        glUniform3f(glGetUniformLocation(shaderID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+
         glm::mat4 projection;
         if (perspective)
             projection = glm::perspective(glm::radians(45.0f),(float)WIDTH/(float)HEIGHT,0.1f,100.0f);
@@ -134,40 +157,42 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shaderID, "view"), 1, GL_FALSE, glm::value_ptr(view));
         glUniform3f(glGetUniformLocation(shaderID, "cameraPos"), camera.position.x, camera.position.y, camera.position.z);
 
-        if (suzanne.nVertices > 0) 
+        auto drawObject = [&](const Mesh& mesh, int objectIndex, const glm::vec3& selectedColor)
         {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, pos[0]);
-            model = glm::rotate(model, glm::radians(rot[0].x), glm::vec3(1.0f, 0.0f, 0.0f));
-            model = glm::rotate(model, glm::radians(rot[0].y), glm::vec3(0.0f, 1.0f, 0.0f));
-            model = glm::rotate(model, glm::radians(rot[0].z), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::scale(model, scale[0]);
-            glUniformMatrix4fv(glGetUniformLocation(shaderID, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            
-            if (selectedObject == 0) glUniform3f(glGetUniformLocation(shaderID, "objectColor"), 1.0f, 0.3f, 0.3f);
-            else glUniform3f(glGetUniformLocation(shaderID, "objectColor"), 0.5f, 0.5f, 0.5f);
+            if (mesh.nVertices <= 0) return;
 
-            glBindVertexArray(suzanne.VAO);
-            glDrawArrays(GL_TRIANGLES, 0, suzanne.nVertices);
-        }
-
-        if (cube.nVertices > 0) 
-        {
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, pos[1]);
-            model = glm::rotate(model, glm::radians(rot[1].x), glm::vec3(1.0f, 0.0f, 0.0f));
-            model = glm::rotate(model, glm::radians(rot[1].y), glm::vec3(0.0f, 1.0f, 0.0f));
-            model = glm::rotate(model, glm::radians(rot[1].z), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::scale(model, scale[1]);
+            model = glm::translate(model, pos[objectIndex]);
+            model = glm::rotate(model, glm::radians(rot[objectIndex].x), glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::rotate(model, glm::radians(rot[objectIndex].y), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::rotate(model, glm::radians(rot[objectIndex].z), glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::scale(model, scale[objectIndex]);
             glUniformMatrix4fv(glGetUniformLocation(shaderID, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
-            if (selectedObject == 1) glUniform3f(glGetUniformLocation(shaderID, "objectColor"), 0.3f, 0.3f, 1.0f);
-            else glUniform3f(glGetUniformLocation(shaderID, "objectColor"), 0.5f, 0.5f, 0.5f);
+            glm::vec3 color = selectedObject == objectIndex ? selectedColor : glm::vec3(0.5f);
+            glUniform3f(glGetUniformLocation(shaderID, "objectColor"), color.r, color.g, color.b);
 
-            glBindVertexArray(cube.VAO);
-            glDrawArrays(GL_TRIANGLES, 0, cube.nVertices);
-        }
+            glBindVertexArray(mesh.VAO);
+            if (wireframeOverlay)
+            {
+                glEnable(GL_POLYGON_OFFSET_FILL);
+                glPolygonOffset(1.0f, 1.0f);
+            }
+            glDrawArrays(GL_TRIANGLES, 0, mesh.nVertices);
 
+            if (wireframeOverlay)
+            {
+                glDisable(GL_POLYGON_OFFSET_FILL);
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                glLineWidth(1.5f);
+                glUniform3f(glGetUniformLocation(shaderID, "objectColor"), 0.0f, 0.0f, 0.0f);
+                glDrawArrays(GL_TRIANGLES, 0, mesh.nVertices);
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            }
+        };
+
+        drawObject(suzanne, 0, glm::vec3(1.0f, 0.3f, 0.3f));
+        drawObject(cube, 1, glm::vec3(0.3f, 0.3f, 1.0f));
         glfwSwapBuffers(window);
     }
     glfwTerminate();
@@ -205,22 +230,98 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
         selectedObject = (selectedObject + 1) % 2;
 
+    if (key == GLFW_KEY_F && action == GLFW_PRESS)
+        wireframeOverlay = !wireframeOverlay;
+
+    if (key == GLFW_KEY_B && action == GLFW_PRESS)
+    {
+        selectedMaterial = (selectedMaterial + 1) % 4;
+        updateWindowTitle(window);
+    }
+
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
-        if (key == GLFW_KEY_UP) pos[selectedObject].y += 0.1f;
-        if (key == GLFW_KEY_DOWN) pos[selectedObject].y -= 0.1f;
-        if (key == GLFW_KEY_LEFT) pos[selectedObject].x -= 0.1f;
-        if (key == GLFW_KEY_RIGHT) pos[selectedObject].x += 0.1f;
-        if (key == GLFW_KEY_O) pos[selectedObject].z -= 0.1f;
-        if (key == GLFW_KEY_L) pos[selectedObject].z += 0.1f;
+        bool shiftPressed = (mode & GLFW_MOD_SHIFT) != 0;
 
-        if (key == GLFW_KEY_X) rot[selectedObject].x += 5.0f;
-        if (key == GLFW_KEY_Y) rot[selectedObject].y += 5.0f;
-        if (key == GLFW_KEY_Z) rot[selectedObject].z += 5.0f;
+        if (shiftPressed)
+        {
+            if (key == GLFW_KEY_UP) lightPos.y += TRANSFORM_STEP;
+            if (key == GLFW_KEY_DOWN) lightPos.y -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_LEFT) lightPos.x -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_RIGHT) lightPos.x += TRANSFORM_STEP;
+            if (key == GLFW_KEY_O) lightPos.z -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_L) lightPos.z += TRANSFORM_STEP;
+        }
+        else
+        {
+            if (key == GLFW_KEY_UP) pos[selectedObject].y += TRANSFORM_STEP;
+            if (key == GLFW_KEY_DOWN) pos[selectedObject].y -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_LEFT) pos[selectedObject].x -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_RIGHT) pos[selectedObject].x += TRANSFORM_STEP;
+            if (key == GLFW_KEY_O) pos[selectedObject].z -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_L) pos[selectedObject].z += TRANSFORM_STEP;
 
-        if (key == GLFW_KEY_E) scale[selectedObject] += 0.1f;
-        if (key == GLFW_KEY_R) scale[selectedObject] -= 0.1f;
+            if (key == GLFW_KEY_X) rot[selectedObject].x += ROTATION_STEP;
+            if (key == GLFW_KEY_Y) rot[selectedObject].y += ROTATION_STEP;
+            if (key == GLFW_KEY_Z) rot[selectedObject].z += ROTATION_STEP;
+
+            if (key == GLFW_KEY_E) applyScaleDelta(selectedObject, glm::vec3(TRANSFORM_STEP));
+            if (key == GLFW_KEY_R) applyScaleDelta(selectedObject, glm::vec3(-TRANSFORM_STEP));
+            if (key == GLFW_KEY_1) applyScaleDelta(selectedObject, glm::vec3(TRANSFORM_STEP, 0.0f, 0.0f));
+            if (key == GLFW_KEY_2) applyScaleDelta(selectedObject, glm::vec3(-TRANSFORM_STEP, 0.0f, 0.0f));
+            if (key == GLFW_KEY_3) applyScaleDelta(selectedObject, glm::vec3(0.0f, TRANSFORM_STEP, 0.0f));
+            if (key == GLFW_KEY_4) applyScaleDelta(selectedObject, glm::vec3(0.0f, -TRANSFORM_STEP, 0.0f));
+            if (key == GLFW_KEY_5) applyScaleDelta(selectedObject, glm::vec3(0.0f, 0.0f, TRANSFORM_STEP));
+            if (key == GLFW_KEY_6) applyScaleDelta(selectedObject, glm::vec3(0.0f, 0.0f, -TRANSFORM_STEP));
+
+            if (key == GLFW_KEY_N) adjustMaterial(-1.0f);
+            if (key == GLFW_KEY_M) adjustMaterial(1.0f);
+
+            if (key == GLFW_KEY_N || key == GLFW_KEY_M)
+                updateWindowTitle(window);
+        }
     }
+}
+
+void applyScaleDelta(int objectIndex, const glm::vec3& delta)
+{
+    scale[objectIndex] += delta;
+    scale[objectIndex].x = clampFloat(scale[objectIndex].x, MIN_SCALE, 100.0f);
+    scale[objectIndex].y = clampFloat(scale[objectIndex].y, MIN_SCALE, 100.0f);
+    scale[objectIndex].z = clampFloat(scale[objectIndex].z, MIN_SCALE, 100.0f);
+}
+
+void adjustMaterial(float direction)
+{
+    if (selectedMaterial == 0)
+        kaValue = clampFloat(kaValue + direction * MATERIAL_STEP, 0.0f, 1.0f);
+    else if (selectedMaterial == 1)
+        kdValue = clampFloat(kdValue + direction * MATERIAL_STEP, 0.0f, 1.0f);
+    else if (selectedMaterial == 2)
+        ksValue = clampFloat(ksValue + direction * MATERIAL_STEP, 0.0f, 1.0f);
+    else if (selectedMaterial == 3)
+        qValue = clampFloat(qValue + direction * SHININESS_STEP, 1.0f, 256.0f);
+}
+
+void updateWindowTitle(GLFWwindow* window)
+{
+    const char* materialNames[4] = {"ka", "kd", "ks", "q"};
+    std::ostringstream title;
+    title.precision(2);
+    title << std::fixed
+          << "Trabalho Grau A | Material: " << materialNames[selectedMaterial]
+          << " | ka=" << kaValue
+          << " kd=" << kdValue
+          << " ks=" << ksValue
+          << " q=" << qValue;
+    glfwSetWindowTitle(window, title.str().c_str());
+}
+
+float clampFloat(float value, float minValue, float maxValue)
+{
+    if (value < minValue) return minValue;
+    if (value > maxValue) return maxValue;
+    return value;
 }
 
 int setupShader()
@@ -244,8 +345,15 @@ int setupShader()
     return shaderProgram;
 }
 
-int loadSimpleOBJ(std::string filePATH, int &nVertices)
+GLuint loadSimpleOBJ(std::string filePATH, int &nVertices)
 {
+    struct ObjIndex
+    {
+        int vi;
+        int ti;
+        int ni;
+    };
+
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec2> texCoords;
     std::vector<glm::vec3> normals;
@@ -255,7 +363,7 @@ int loadSimpleOBJ(std::string filePATH, int &nVertices)
     if (!arqEntrada.is_open()) 
     {
         nVertices = 0; 
-        return -1; 
+        return 0;
     }
 
     std::string line;
@@ -285,25 +393,49 @@ int loadSimpleOBJ(std::string filePATH, int &nVertices)
         } 
         else if (word == "f")
         {
-            while (ssline >> word) 
+            std::vector<std::string> faceVertices;
+            while (ssline >> word)
+                faceVertices.push_back(word);
+
+            if (faceVertices.size() != 3)
+                continue;
+
+            std::vector<ObjIndex> faceIndices;
+            bool validFace = true;
+
+            for (const std::string& faceVertex : faceVertices)
             {
-                int vi = 0, ti = 0, ni = 0;
-                std::istringstream ss(word);
+                ObjIndex idx = {-1, -1, -1};
+                std::istringstream ss(faceVertex);
                 std::string index;
 
-                if (std::getline(ss, index, '/')) vi = !index.empty() ? std::stoi(index) - 1 : 0;
-                if (std::getline(ss, index, '/')) ti = !index.empty() ? std::stoi(index) - 1 : 0;
-                if (std::getline(ss, index)) ni = !index.empty() ? std::stoi(index) - 1 : 0;
+                if (std::getline(ss, index, '/')) idx.vi = !index.empty() ? std::stoi(index) - 1 : -1;
+                if (std::getline(ss, index, '/')) idx.ti = !index.empty() ? std::stoi(index) - 1 : -1;
+                if (std::getline(ss, index)) idx.ni = !index.empty() ? std::stoi(index) - 1 : -1;
 
-                vBuffer.push_back(vertices[vi].x);
-                vBuffer.push_back(vertices[vi].y);
-                vBuffer.push_back(vertices[vi].z);
-                vBuffer.push_back(0.0f);
-                vBuffer.push_back(0.0f);
-                vBuffer.push_back(0.0f);
-                vBuffer.push_back(normals[ni].x);
-                vBuffer.push_back(normals[ni].y);
-                vBuffer.push_back(normals[ni].z);
+                if (idx.vi < 0 || idx.vi >= static_cast<int>(vertices.size()))
+                    validFace = false;
+
+                faceIndices.push_back(idx);
+            }
+
+            if (!validFace)
+                continue;
+
+            for (const ObjIndex& idx : faceIndices)
+            {
+                glm::vec3 vertex = vertices[idx.vi];
+                glm::vec2 texCoord = idx.ti >= 0 && idx.ti < static_cast<int>(texCoords.size()) ? texCoords[idx.ti] : glm::vec2(0.0f);
+                glm::vec3 normal = idx.ni >= 0 && idx.ni < static_cast<int>(normals.size()) ? normals[idx.ni] : glm::vec3(0.0f, 0.0f, 1.0f);
+
+                vBuffer.push_back(vertex.x);
+                vBuffer.push_back(vertex.y);
+                vBuffer.push_back(vertex.z);
+                vBuffer.push_back(texCoord.x);
+                vBuffer.push_back(texCoord.y);
+                vBuffer.push_back(normal.x);
+                vBuffer.push_back(normal.y);
+                vBuffer.push_back(normal.z);
             }
         }
     }
@@ -317,16 +449,19 @@ int loadSimpleOBJ(std::string filePATH, int &nVertices)
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
     
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(5 * sizeof(GLfloat)));
     glEnableVertexAttribArray(2);
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    nVertices = vBuffer.size() / 9;  
+    nVertices = vBuffer.size() / 8;
 
     return VAO;
 }
