@@ -4,7 +4,7 @@ Leitor e visualizador de cenas 3D com OpenGL moderna. O projeto carrega modelos 
 
 ## Componentes
 
-- Preencher com o nome completo dos integrantes.
+- Arthur Palma e Vicenzo Valmórbida
 
 ## Requisitos
 
