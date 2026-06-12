@@ -1,0 +1,161 @@
+{
+  "camera": {
+    "position": [0.0, 5.5, 17.0],
+    "up": [0.0, 1.0, 0.0],
+    "yaw": -90.0,
+    "pitch": -14.0
+  },
+  "projection": {
+    "type": "perspective",
+    "perspective": {
+      "fov": 55.0,
+      "near": 0.1,
+      "far": 100.0
+    },
+    "orthographic": {
+      "left": -12.0,
+      "right": 12.0,
+      "bottom": -5.0,
+      "top": 8.0,
+      "near": 0.1,
+      "far": 100.0
+    }
+  },
+  "lights": [
+    {
+      "type": "point",
+      "position": [-3.0, 7.0, 5.0],
+      "color": [1.0, 1.0, 1.0]
+    }
+  ],
+  "objects": [
+    {
+      "name": "Castle Wall Left",
+      "file": "Modelos3D/castle-wall.obj",
+      "position": [-4.0, 0.0, -8.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.5, 0.5, 0.6]
+    },
+    {
+      "name": "Castle Gate",
+      "file": "Modelos3D/castle-gate.obj",
+      "position": [0.0, 0.0, -8.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.7, 0.7, 0.8]
+    },
+    {
+      "name": "Castle Window",
+      "file": "Modelos3D/castle-window.obj",
+      "position": [4.0, 0.0, -8.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.6, 0.7, 0.8]
+    },
+    {
+      "name": "Castle Door",
+      "file": "Modelos3D/castle-door.obj",
+      "position": [8.0, 0.0, -8.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.6, 0.6, 0.7]
+    },
+    {
+      "name": "Cannon",
+      "file": "Modelos3D/cannon.obj",
+      "position": [-6.0, 0.0, -3.0],
+      "rotation": [0.0, 25.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.4, 0.4, 0.4]
+    },
+    {
+      "name": "Cannon Mobile",
+      "file": "Modelos3D/cannon-mobile.obj",
+      "position": [-2.0, 0.0, -3.0],
+      "rotation": [0.0, -20.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.5, 0.5, 0.5]
+    },
+    {
+      "name": "Cannon Ball",
+      "file": "Modelos3D/cannon-ball.obj",
+      "position": [1.5, 0.35, -3.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.2, 0.2, 0.2]
+    },
+    {
+      "name": "Boat Row Small",
+      "file": "Modelos3D/boat-row-small.obj",
+      "position": [5.0, 0.0, -3.0],
+      "rotation": [0.0, -20.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.3, 0.5, 0.8]
+    },
+    {
+      "name": "Boat Row Large",
+      "file": "Modelos3D/boat-row-large.obj",
+      "position": [9.0, 0.0, -3.0],
+      "rotation": [0.0, 20.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.2, 0.4, 0.8]
+    },
+    {
+      "name": "Barrel",
+      "file": "Modelos3D/barrel.obj",
+      "position": [-8.0, 0.0, 2.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.7, 0.4, 0.2]
+    },
+    {
+      "name": "Chest",
+      "file": "Modelos3D/chest.obj",
+      "position": [-5.0, 0.0, 2.0],
+      "rotation": [0.0, 15.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.9, 0.6, 0.2]
+    },
+    {
+      "name": "Crate",
+      "file": "Modelos3D/crate.obj",
+      "position": [-2.0, 0.0, 2.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.6, 0.4, 0.2]
+    },
+    {
+      "name": "Bottle",
+      "file": "Modelos3D/bottle.obj",
+      "position": [1.0, 0.0, 2.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.2, 0.7, 0.5]
+    },
+    {
+      "name": "Bottle Large",
+      "file": "Modelos3D/bottle-large.obj",
+      "position": [3.0, 0.0, 2.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.2, 0.8, 0.7]
+    },
+    {
+      "name": "Suzanne",
+      "file": "Modelos3D/Suzanne.obj",
+      "position": [6.0, 0.0, 2.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [1.0, 0.3, 0.3]
+    },
+    {
+      "name": "Cube",
+      "file": "Modelos3D/Cube.obj",
+      "position": [9.0, 0.0, 2.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "selectedColor": [0.3, 0.3, 1.0]
+    }
+  ]
+}

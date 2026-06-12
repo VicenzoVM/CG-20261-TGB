@@ -11,7 +11,7 @@ Leitor e visualizador de cenas 3D com OpenGL moderna. O projeto carrega modelos 
 - CMake 3.10 ou superior
 - Compilador C++ com suporte a C++17
 - OpenGL
-- Git, usado pelo CMake para baixar GLFW, GLM e stb no primeiro configure
+- Git, usado pelo CMake para baixar GLFW, GLM, nlohmann/json e stb no primeiro configure
 
 ## Compilacao
 
@@ -22,12 +22,31 @@ cmake --build build --target TrabalhoGA
 
 ## Execucao
 
-Execute a partir da pasta `build`, pois os caminhos dos modelos usam `../assets/Modelos3D`.
+Execute a partir da pasta `build`. Por padrao, o programa carrega a cena em `../assets/cena.json`.
 
 ```bash
 cd build
 ./TrabalhoGA
 ```
+
+Tambem e possivel informar outro arquivo de cena:
+
+```bash
+./TrabalhoGA ../assets/outra_cena.json
+```
+
+## Arquivo de cena
+
+A cena e definida em `assets/cena.json`. O arquivo contem camera, projecao/frustum, luzes e objetos. Os caminhos dos modelos sao relativos ao proprio arquivo de cena.
+
+Campos principais:
+
+- `camera`: `position`, `up`, `yaw`, `pitch`.
+- `projection`: `type`, configuracao `perspective` e configuracao `orthographic`.
+- `lights`: lista de luzes pontuais com `position` e `color`.
+- `objects`: lista de objetos com `name`, `file`, `position`, `rotation`, `scale` e `selectedColor`.
+
+O carregador tambem aceita alguns aliases em portugues usados na especificacao, como `arquivo`, `posicao`, `trans`, `rot`, `rotacao`, `escala` e `cor`.
 
 ## Controles
 
@@ -40,7 +59,7 @@ cd build
 
 ### Objeto selecionado
 
-- `Tab`: alterna entre os objetos da cena.
+- `Tab`: alterna entre os objetos carregados no arquivo de cena.
 - `Seta esquerda` / `Seta direita`: translada no eixo X.
 - `Seta cima` / `Seta baixo`: translada no eixo Y.
 - `O` / `L`: translada no eixo Z.

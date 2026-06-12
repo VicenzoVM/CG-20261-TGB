@@ -22,8 +22,15 @@ FetchContent_Declare(
   GIT_TAG master  # Define a versão desejada da GLM
 )
 
+# Configura o FetchContent para baixar a biblioteca de JSON automaticamente
+FetchContent_Declare(
+  nlohmann_json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG v3.11.3
+)
+
 # Faz o download e compila as bibliotecas
-FetchContent_MakeAvailable(glfw glm)
+FetchContent_MakeAvailable(glfw glm nlohmann_json)
 
 # Configura o FetchContent para baixar a stb_image automaticamente
 FetchContent_Declare(
@@ -83,5 +90,5 @@ foreach(EXERCISE ${EXERCISES})
     
     # Configura os includes e linka as bibliotecas
     target_include_directories(${EXERCISE} PRIVATE ${CMAKE_SOURCE_DIR}/include/glad ${glm_SOURCE_DIR} ${stb_image_SOURCE_DIR})
-    target_link_libraries(${EXERCISE} glfw ${OPENGL_LIBS})
+    target_link_libraries(${EXERCISE} glfw nlohmann_json::nlohmann_json ${OPENGL_LIBS})
 endforeach()

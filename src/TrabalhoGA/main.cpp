@@ -3,21 +3,28 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
+#include <stdexcept>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <nlohmann/json.hpp>
 #include "Camera.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
 int setupShader();
 GLuint loadSimpleOBJ(std::string filePATH, int &nVertices);
+bool loadSceneConfig(const std::string& filePATH);
 void applyScaleDelta(int objectIndex, const glm::vec3& delta);
 void adjustMaterial(float direction);
 void updateWindowTitle(GLFWwindow* window);
 float clampFloat(float value, float minValue, float maxValue);
+std::string defaultSceneConfigPath();
+std::string resolveRelativePath(const std::string& baseFilePATH, const std::string& filePATH);
+glm::vec3 readVec3(const nlohmann::json& jsonObject, const std::vector<std::string>& fieldNames, const glm::vec3& defaultValue);
 
 const GLuint WIDTH = 800, HEIGHT = 600;
 
@@ -41,40 +48,90 @@ void main()
 )glsl";
 
 const GLchar* fragmentShaderSource = R"glsl(#version 330 core
+const int MAX_LIGHTS = 8;
+struct PointLight
+{
+    vec3 position;
+    vec3 color;
+};
 in vec3 fragPos;
 in vec2 fragTexCoord;
 in vec3 scaledNormal;
 uniform float ka;
 uniform float kd;
 uniform float ks, q;
-uniform vec3 lightPos;
-uniform vec3 lightColor;
+uniform int numLights;
+uniform PointLight lights[MAX_LIGHTS];
 uniform vec3 cameraPos;
 uniform vec3 objectColor;
 out vec4 color;
 void main()
 {
-    vec3 ambient = ka * lightColor;
     vec3 N = normalize(scaledNormal);
-    vec3 L = normalize(lightPos - fragPos);
-    float diff = max(dot(N,L),0.0);
-    vec3 diffuse = kd * diff * lightColor;
     vec3 V = normalize(cameraPos - fragPos);
-    vec3 R = reflect(-L, N);
-    float spec = pow(max(dot(V, R), 0.0), q);
-    vec3 specular = ks * spec * lightColor;
-    vec3 result = (ambient + diffuse + specular) * objectColor;
+    vec3 result = vec3(0.0);
+
+    for (int i = 0; i < numLights; i++)
+    {
+        vec3 ambient = ka * lights[i].color;
+        vec3 L = normalize(lights[i].position - fragPos);
+        float diff = max(dot(N,L),0.0);
+        vec3 diffuse = kd * diff * lights[i].color;
+        vec3 R = reflect(-L, N);
+        float spec = pow(max(dot(V, R), 0.0), q);
+        vec3 specular = ks * spec * lights[i].color;
+        result += ambient + diffuse + specular;
+    }
+
+    result *= objectColor;
     color = vec4(result, 1.0);
 }
 )glsl";
 
-bool perspective = true;
+const int MAX_LIGHTS = 8;
+
+struct Mesh
+{
+    GLuint VAO = 0;
+    int nVertices = 0;
+};
+
+struct SceneObject
+{
+    std::string name;
+    std::string filePATH;
+    Mesh mesh;
+    glm::vec3 position = glm::vec3(0.0f);
+    glm::vec3 rotation = glm::vec3(0.0f);
+    glm::vec3 scale = glm::vec3(1.0f);
+    glm::vec3 selectedColor = glm::vec3(1.0f);
+};
+
+struct PointLight
+{
+    glm::vec3 position = glm::vec3(-2.0f, 5.0f, 2.0f);
+    glm::vec3 color = glm::vec3(1.0f);
+};
+
+struct ProjectionConfig
+{
+    bool perspective = true;
+    float fov = 45.0f;
+    float perspectiveNear = 0.1f;
+    float perspectiveFar = 100.0f;
+    float left = -4.0f;
+    float right = 4.0f;
+    float bottom = -3.0f;
+    float top = 3.0f;
+    float orthographicNear = 0.1f;
+    float orthographicFar = 100.0f;
+};
+
 bool wireframeOverlay = false;
 int selectedObject = 0;
-glm::vec3 pos[2] = {glm::vec3(-1.5f, 0.0f, 0.0f), glm::vec3(1.5f, 0.0f, 0.0f)};
-glm::vec3 scale[2] = {glm::vec3(1.0f), glm::vec3(1.0f)};
-glm::vec3 rot[2] = {glm::vec3(0.0f), glm::vec3(0.0f)};
-glm::vec3 lightPos(-2.0f, 5.0f, 2.0f);
+std::vector<SceneObject> sceneObjects;
+std::vector<PointLight> sceneLights;
+ProjectionConfig projectionConfig;
 float kaValue = 0.2f;
 float kdValue = 0.7f;
 float ksValue = 0.5f;
@@ -94,13 +151,7 @@ float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
 
-struct Mesh 
-{
-    GLuint VAO; 
-    int nVertices;
-};
-
-int main()
+int main(int argc, char** argv)
 {
     glfwInit();
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Trabalho Grau A", nullptr, nullptr);
@@ -118,11 +169,13 @@ int main()
     GLuint shaderID = setupShader();
     glUseProgram(shaderID);
 
-    Mesh suzanne, cube;
-    suzanne.VAO = loadSimpleOBJ("../assets/Modelos3D/Suzanne.obj", suzanne.nVertices);
-    cube.VAO = loadSimpleOBJ("../assets/Modelos3D/Cube.obj", cube.nVertices);
-
-    glUniform3f(glGetUniformLocation(shaderID, "lightColor"), 1.0f, 1.0f, 1.0f);
+    std::string sceneConfigPath = argc > 1 ? argv[1] : defaultSceneConfigPath();
+    if (!loadSceneConfig(sceneConfigPath))
+    {
+        glfwTerminate();
+        return -1;
+    }
+    updateWindowTitle(window);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -143,13 +196,24 @@ int main()
         glUniform1f(glGetUniformLocation(shaderID, "kd"), kdValue);
         glUniform1f(glGetUniformLocation(shaderID, "ks"), ksValue);
         glUniform1f(glGetUniformLocation(shaderID, "q"), qValue);
-        glUniform3f(glGetUniformLocation(shaderID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+
+        int numLights = std::min(static_cast<int>(sceneLights.size()), MAX_LIGHTS);
+        glUniform1i(glGetUniformLocation(shaderID, "numLights"), numLights);
+        for (int i = 0; i < numLights; i++)
+        {
+            std::string positionUniform = "lights[" + std::to_string(i) + "].position";
+            std::string colorUniform = "lights[" + std::to_string(i) + "].color";
+            glUniform3f(glGetUniformLocation(shaderID, positionUniform.c_str()),
+                        sceneLights[i].position.x, sceneLights[i].position.y, sceneLights[i].position.z);
+            glUniform3f(glGetUniformLocation(shaderID, colorUniform.c_str()),
+                        sceneLights[i].color.r, sceneLights[i].color.g, sceneLights[i].color.b);
+        }
 
         glm::mat4 projection;
-        if (perspective)
-            projection = glm::perspective(glm::radians(45.0f),(float)WIDTH/(float)HEIGHT,0.1f,100.0f);
+        if (projectionConfig.perspective)
+            projection = glm::perspective(glm::radians(projectionConfig.fov), (float)WIDTH/(float)HEIGHT, projectionConfig.perspectiveNear, projectionConfig.perspectiveFar);
         else 
-            projection = glm::ortho(-4.0f, 4.0f, -3.0f, 3.0f, 0.1f, 100.0f);
+            projection = glm::ortho(projectionConfig.left, projectionConfig.right, projectionConfig.bottom, projectionConfig.top, projectionConfig.orthographicNear, projectionConfig.orthographicFar);
         
         glUniformMatrix4fv(glGetUniformLocation(shaderID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -157,28 +221,28 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shaderID, "view"), 1, GL_FALSE, glm::value_ptr(view));
         glUniform3f(glGetUniformLocation(shaderID, "cameraPos"), camera.position.x, camera.position.y, camera.position.z);
 
-        auto drawObject = [&](const Mesh& mesh, int objectIndex, const glm::vec3& selectedColor)
+        auto drawObject = [&](const SceneObject& object, int objectIndex)
         {
-            if (mesh.nVertices <= 0) return;
+            if (object.mesh.nVertices <= 0) return;
 
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, pos[objectIndex]);
-            model = glm::rotate(model, glm::radians(rot[objectIndex].x), glm::vec3(1.0f, 0.0f, 0.0f));
-            model = glm::rotate(model, glm::radians(rot[objectIndex].y), glm::vec3(0.0f, 1.0f, 0.0f));
-            model = glm::rotate(model, glm::radians(rot[objectIndex].z), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::scale(model, scale[objectIndex]);
+            model = glm::translate(model, object.position);
+            model = glm::rotate(model, glm::radians(object.rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::rotate(model, glm::radians(object.rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::rotate(model, glm::radians(object.rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::scale(model, object.scale);
             glUniformMatrix4fv(glGetUniformLocation(shaderID, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
-            glm::vec3 color = selectedObject == objectIndex ? selectedColor : glm::vec3(0.5f);
+            glm::vec3 color = selectedObject == objectIndex ? object.selectedColor : glm::vec3(0.5f);
             glUniform3f(glGetUniformLocation(shaderID, "objectColor"), color.r, color.g, color.b);
 
-            glBindVertexArray(mesh.VAO);
+            glBindVertexArray(object.mesh.VAO);
             if (wireframeOverlay)
             {
                 glEnable(GL_POLYGON_OFFSET_FILL);
                 glPolygonOffset(1.0f, 1.0f);
             }
-            glDrawArrays(GL_TRIANGLES, 0, mesh.nVertices);
+            glDrawArrays(GL_TRIANGLES, 0, object.mesh.nVertices);
 
             if (wireframeOverlay)
             {
@@ -186,13 +250,14 @@ int main()
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                 glLineWidth(1.5f);
                 glUniform3f(glGetUniformLocation(shaderID, "objectColor"), 0.0f, 0.0f, 0.0f);
-                glDrawArrays(GL_TRIANGLES, 0, mesh.nVertices);
+                glDrawArrays(GL_TRIANGLES, 0, object.mesh.nVertices);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             }
         };
 
-        drawObject(suzanne, 0, glm::vec3(1.0f, 0.3f, 0.3f));
-        drawObject(cube, 1, glm::vec3(0.3f, 0.3f, 1.0f));
+        for (int i = 0; i < static_cast<int>(sceneObjects.size()); i++)
+            drawObject(sceneObjects[i], i);
+
         glfwSwapBuffers(window);
     }
     glfwTerminate();
@@ -225,10 +290,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         glfwSetWindowShouldClose(window, GL_TRUE);
 
     if (key == GLFW_KEY_P && action == GLFW_PRESS)
-        perspective = !perspective;
+        projectionConfig.perspective = !projectionConfig.perspective;
 
-    if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
-        selectedObject = (selectedObject + 1) % 2;
+    if (key == GLFW_KEY_TAB && action == GLFW_PRESS && !sceneObjects.empty())
+        selectedObject = (selectedObject + 1) % static_cast<int>(sceneObjects.size());
 
     if (key == GLFW_KEY_F && action == GLFW_PRESS)
         wireframeOverlay = !wireframeOverlay;
@@ -245,25 +310,31 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
         if (shiftPressed)
         {
-            if (key == GLFW_KEY_UP) lightPos.y += TRANSFORM_STEP;
-            if (key == GLFW_KEY_DOWN) lightPos.y -= TRANSFORM_STEP;
-            if (key == GLFW_KEY_LEFT) lightPos.x -= TRANSFORM_STEP;
-            if (key == GLFW_KEY_RIGHT) lightPos.x += TRANSFORM_STEP;
-            if (key == GLFW_KEY_O) lightPos.z -= TRANSFORM_STEP;
-            if (key == GLFW_KEY_L) lightPos.z += TRANSFORM_STEP;
+            if (sceneLights.empty()) return;
+
+            if (key == GLFW_KEY_UP) sceneLights[0].position.y += TRANSFORM_STEP;
+            if (key == GLFW_KEY_DOWN) sceneLights[0].position.y -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_LEFT) sceneLights[0].position.x -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_RIGHT) sceneLights[0].position.x += TRANSFORM_STEP;
+            if (key == GLFW_KEY_O) sceneLights[0].position.z -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_L) sceneLights[0].position.z += TRANSFORM_STEP;
         }
         else
         {
-            if (key == GLFW_KEY_UP) pos[selectedObject].y += TRANSFORM_STEP;
-            if (key == GLFW_KEY_DOWN) pos[selectedObject].y -= TRANSFORM_STEP;
-            if (key == GLFW_KEY_LEFT) pos[selectedObject].x -= TRANSFORM_STEP;
-            if (key == GLFW_KEY_RIGHT) pos[selectedObject].x += TRANSFORM_STEP;
-            if (key == GLFW_KEY_O) pos[selectedObject].z -= TRANSFORM_STEP;
-            if (key == GLFW_KEY_L) pos[selectedObject].z += TRANSFORM_STEP;
+            if (sceneObjects.empty() || selectedObject < 0 || selectedObject >= static_cast<int>(sceneObjects.size())) return;
 
-            if (key == GLFW_KEY_X) rot[selectedObject].x += ROTATION_STEP;
-            if (key == GLFW_KEY_Y) rot[selectedObject].y += ROTATION_STEP;
-            if (key == GLFW_KEY_Z) rot[selectedObject].z += ROTATION_STEP;
+            SceneObject& object = sceneObjects[selectedObject];
+
+            if (key == GLFW_KEY_UP) object.position.y += TRANSFORM_STEP;
+            if (key == GLFW_KEY_DOWN) object.position.y -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_LEFT) object.position.x -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_RIGHT) object.position.x += TRANSFORM_STEP;
+            if (key == GLFW_KEY_O) object.position.z -= TRANSFORM_STEP;
+            if (key == GLFW_KEY_L) object.position.z += TRANSFORM_STEP;
+
+            if (key == GLFW_KEY_X) object.rotation.x += ROTATION_STEP;
+            if (key == GLFW_KEY_Y) object.rotation.y += ROTATION_STEP;
+            if (key == GLFW_KEY_Z) object.rotation.z += ROTATION_STEP;
 
             if (key == GLFW_KEY_E) applyScaleDelta(selectedObject, glm::vec3(TRANSFORM_STEP));
             if (key == GLFW_KEY_R) applyScaleDelta(selectedObject, glm::vec3(-TRANSFORM_STEP));
@@ -285,10 +356,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void applyScaleDelta(int objectIndex, const glm::vec3& delta)
 {
-    scale[objectIndex] += delta;
-    scale[objectIndex].x = clampFloat(scale[objectIndex].x, MIN_SCALE, 100.0f);
-    scale[objectIndex].y = clampFloat(scale[objectIndex].y, MIN_SCALE, 100.0f);
-    scale[objectIndex].z = clampFloat(scale[objectIndex].z, MIN_SCALE, 100.0f);
+    if (objectIndex < 0 || objectIndex >= static_cast<int>(sceneObjects.size())) return;
+
+    glm::vec3& objectScale = sceneObjects[objectIndex].scale;
+    objectScale += delta;
+    objectScale.x = clampFloat(objectScale.x, MIN_SCALE, 100.0f);
+    objectScale.y = clampFloat(objectScale.y, MIN_SCALE, 100.0f);
+    objectScale.z = clampFloat(objectScale.z, MIN_SCALE, 100.0f);
 }
 
 void adjustMaterial(float direction)
@@ -322,6 +396,178 @@ float clampFloat(float value, float minValue, float maxValue)
     if (value < minValue) return minValue;
     if (value > maxValue) return maxValue;
     return value;
+}
+
+std::string defaultSceneConfigPath()
+{
+    std::vector<std::string> candidates = {
+        "../assets/cena.json",
+        "assets/cena.json"
+    };
+
+    for (const std::string& path : candidates)
+    {
+        std::ifstream file(path.c_str());
+        if (file.is_open())
+            return path;
+    }
+
+    return "../assets/cena.json";
+}
+
+std::string resolveRelativePath(const std::string& baseFilePATH, const std::string& filePATH)
+{
+    if (filePATH.empty())
+        return filePATH;
+
+    if (filePATH[0] == '/' || (filePATH.size() > 1 && filePATH[1] == ':'))
+        return filePATH;
+
+    std::size_t separator = baseFilePATH.find_last_of("/\\");
+    if (separator == std::string::npos)
+        return filePATH;
+
+    return baseFilePATH.substr(0, separator + 1) + filePATH;
+}
+
+glm::vec3 readVec3Field(const nlohmann::json& value, const std::string& fieldName)
+{
+    if (!value.is_array() || value.size() != 3)
+        throw std::runtime_error("Campo '" + fieldName + "' deve ser um array com 3 numeros.");
+
+    return glm::vec3(value.at(0).get<float>(), value.at(1).get<float>(), value.at(2).get<float>());
+}
+
+glm::vec3 readVec3(const nlohmann::json& jsonObject, const std::vector<std::string>& fieldNames, const glm::vec3& defaultValue)
+{
+    for (const std::string& fieldName : fieldNames)
+    {
+        if (jsonObject.contains(fieldName))
+            return readVec3Field(jsonObject.at(fieldName), fieldName);
+    }
+
+    return defaultValue;
+}
+
+std::string readString(const nlohmann::json& jsonObject, const std::vector<std::string>& fieldNames, const std::string& defaultValue)
+{
+    for (const std::string& fieldName : fieldNames)
+    {
+        if (jsonObject.contains(fieldName))
+            return jsonObject.at(fieldName).get<std::string>();
+    }
+
+    return defaultValue;
+}
+
+bool loadSceneConfig(const std::string& filePATH)
+{
+    std::ifstream sceneFile(filePATH.c_str());
+    if (!sceneFile.is_open())
+    {
+        std::cerr << "Erro ao abrir arquivo de cena: " << filePATH << std::endl;
+        return false;
+    }
+
+    try
+    {
+        nlohmann::json sceneJson;
+        sceneFile >> sceneJson;
+
+        sceneObjects.clear();
+        sceneLights.clear();
+
+        if (sceneJson.contains("camera"))
+        {
+            const nlohmann::json& cameraJson = sceneJson.at("camera");
+            glm::vec3 cameraPosition = readVec3(cameraJson, {"position", "posicao", "trans", "translation"}, camera.position);
+            glm::vec3 cameraUp = readVec3(cameraJson, {"up"}, camera.worldUp);
+            float yaw = cameraJson.value("yaw", camera.yaw);
+            float pitch = cameraJson.value("pitch", camera.pitch);
+            camera.setPose(cameraPosition, cameraUp, yaw, pitch);
+        }
+
+        if (sceneJson.contains("projection"))
+        {
+            const nlohmann::json& projectionJson = sceneJson.at("projection");
+            std::string type = projectionJson.value("type", "perspective");
+            projectionConfig.perspective = type != "orthographic";
+
+            const nlohmann::json& perspectiveJson = projectionJson.contains("perspective") ? projectionJson.at("perspective") : projectionJson;
+            projectionConfig.fov = perspectiveJson.value("fov", projectionConfig.fov);
+            projectionConfig.perspectiveNear = perspectiveJson.value("near", projectionConfig.perspectiveNear);
+            projectionConfig.perspectiveFar = perspectiveJson.value("far", projectionConfig.perspectiveFar);
+
+            const nlohmann::json& orthographicJson = projectionJson.contains("orthographic") ? projectionJson.at("orthographic") : projectionJson;
+            projectionConfig.left = orthographicJson.value("left", projectionConfig.left);
+            projectionConfig.right = orthographicJson.value("right", projectionConfig.right);
+            projectionConfig.bottom = orthographicJson.value("bottom", projectionConfig.bottom);
+            projectionConfig.top = orthographicJson.value("top", projectionConfig.top);
+            projectionConfig.orthographicNear = orthographicJson.value("near", projectionConfig.orthographicNear);
+            projectionConfig.orthographicFar = orthographicJson.value("far", projectionConfig.orthographicFar);
+        }
+
+        if (sceneJson.contains("lights"))
+        {
+            const nlohmann::json& lightsJson = sceneJson.at("lights");
+            if (!lightsJson.is_array())
+                throw std::runtime_error("Campo 'lights' deve ser um array.");
+
+            for (const nlohmann::json& lightJson : lightsJson)
+            {
+                std::string type = lightJson.value("type", "point");
+                if (type != "point")
+                    throw std::runtime_error("Tipo de luz nao suportado: " + type);
+
+                PointLight light;
+                light.position = readVec3(lightJson, {"position", "posicao", "trans", "translation"}, light.position);
+                light.color = readVec3(lightJson, {"color", "cor"}, light.color);
+                sceneLights.push_back(light);
+            }
+        }
+
+        if (sceneLights.empty())
+            sceneLights.push_back(PointLight());
+
+        if (!sceneJson.contains("objects") || !sceneJson.at("objects").is_array())
+            throw std::runtime_error("Arquivo de cena deve conter o array 'objects'.");
+
+        const nlohmann::json& objectsJson = sceneJson.at("objects");
+        for (std::size_t i = 0; i < objectsJson.size(); i++)
+        {
+            const nlohmann::json& objectJson = objectsJson.at(i);
+            std::string fileName = readString(objectJson, {"file", "arquivo"}, "");
+            if (fileName.empty())
+                throw std::runtime_error("Objeto sem campo 'file' no indice " + std::to_string(i) + ".");
+
+            SceneObject object;
+            object.name = readString(objectJson, {"name", "nome"}, "Object " + std::to_string(i));
+            object.filePATH = resolveRelativePath(filePATH, fileName);
+            object.position = readVec3(objectJson, {"position", "posicao", "trans", "translation"}, object.position);
+            object.rotation = readVec3(objectJson, {"rotation", "rotacao", "rot"}, object.rotation);
+            object.scale = readVec3(objectJson, {"scale", "escala"}, object.scale);
+            object.selectedColor = readVec3(objectJson, {"selectedColor", "corSelecionado"}, object.selectedColor);
+            object.mesh.VAO = loadSimpleOBJ(object.filePATH, object.mesh.nVertices);
+
+            if (object.mesh.nVertices <= 0)
+                throw std::runtime_error("Nao foi possivel carregar o OBJ: " + object.filePATH);
+
+            sceneObjects.push_back(object);
+        }
+
+        if (sceneObjects.empty())
+            throw std::runtime_error("Arquivo de cena nao possui objetos.");
+
+        selectedObject = 0;
+        return true;
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "Erro ao carregar cena '" << filePATH << "': " << error.what() << std::endl;
+        sceneObjects.clear();
+        sceneLights.clear();
+        return false;
+    }
 }
 
 int setupShader()
