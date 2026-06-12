@@ -44,7 +44,7 @@ Campos principais:
 - `camera`: `position`, `up`, `yaw`, `pitch`.
 - `projection`: `type`, configuracao `perspective` e configuracao `orthographic`.
 - `lights`: lista de luzes pontuais com `position` e `color`.
-- `objects`: lista de objetos com `name`, `file`, `position`, `rotation`, `scale` e `selectedColor`.
+- `objects`: lista de objetos com `name`, `file`, `position`, `rotation`, `scale`, `color` e `selectedColor`.
 
 O carregador tambem aceita alguns aliases em portugues usados na especificacao, como `arquivo`, `posicao`, `trans`, `rot`, `rotacao`, `escala` e `cor`.
 

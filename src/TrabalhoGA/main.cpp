@@ -104,6 +104,7 @@ struct SceneObject
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 rotation = glm::vec3(0.0f);
     glm::vec3 scale = glm::vec3(1.0f);
+    glm::vec3 color = glm::vec3(0.5f);
     glm::vec3 selectedColor = glm::vec3(1.0f);
 };
 
@@ -233,7 +234,7 @@ int main(int argc, char** argv)
             model = glm::scale(model, object.scale);
             glUniformMatrix4fv(glGetUniformLocation(shaderID, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
-            glm::vec3 color = selectedObject == objectIndex ? object.selectedColor : glm::vec3(0.5f);
+            glm::vec3 color = selectedObject == objectIndex ? object.selectedColor : object.color;
             glUniform3f(glGetUniformLocation(shaderID, "objectColor"), color.r, color.g, color.b);
 
             glBindVertexArray(object.mesh.VAO);
@@ -546,6 +547,7 @@ bool loadSceneConfig(const std::string& filePATH)
             object.position = readVec3(objectJson, {"position", "posicao", "trans", "translation"}, object.position);
             object.rotation = readVec3(objectJson, {"rotation", "rotacao", "rot"}, object.rotation);
             object.scale = readVec3(objectJson, {"scale", "escala"}, object.scale);
+            object.color = readVec3(objectJson, {"color", "cor"}, object.color);
             object.selectedColor = readVec3(objectJson, {"selectedColor", "corSelecionado"}, object.selectedColor);
             object.mesh.VAO = loadSimpleOBJ(object.filePATH, object.mesh.nVertices);
 
