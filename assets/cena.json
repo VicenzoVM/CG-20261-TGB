@@ -35,9 +35,45 @@
   ],
   "objects": [
     {
+      "name": "Oceano",
+      "file": "Modelos3D/Cube.obj",
+      "position": [0.0, 0.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [25.0, 0.1, 25.0],
+      "color": [0.15, 0.55, 0.85],
+      "selectedColor": [0.3, 0.7, 1.0]
+    },
+    {
+      "name": "Areia Forte (Norte)",
+      "file": "Modelos3D/patch-sand.obj",
+      "position": [0.0, 0.0, -21.5],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [6.0, 0.5, 3.0],
+      "color": [0.95, 0.85, 0.65],
+      "selectedColor": [1.0, 0.95, 0.75]
+    },
+    {
+      "name": "Areia Canhoes (Sul)",
+      "file": "Modelos3D/patch-sand.obj",
+      "position": [0.0, 0.0, 15.8],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [6.0, 0.5, 3.0],
+      "color": [0.95, 0.85, 0.65],
+      "selectedColor": [1.0, 0.95, 0.75]
+    },
+    {
+      "name": "Palmeira Praia",
+      "file": "Modelos3D/palm-detailed-bend.obj",
+      "position": [-9.0, -0.2, -19.0],
+      "rotation": [0.0, 45.0, 0.0],
+      "scale": [1.5, 1.5, 1.5],
+      "color": [0.8, 0.8, 0.8],
+      "selectedColor": [1.0, 1.0, 1.0]
+    },
+    {
       "name": "Fort Wall Left",
       "file": "Modelos3D/castle-wall.obj",
-      "position": [-7.5, 0.0, -16.0],
+      "position": [-7.5, 0.0, -22.0],
       "rotation": [0.0, 0.0, 0.0],
       "scale": [1.25, 1.0, 1.0],
       "color": [0.45, 0.45, 0.5],
@@ -46,7 +82,7 @@
     {
       "name": "Fort Gate",
       "file": "Modelos3D/castle-gate.obj",
-      "position": [-2.5, 0.0, -16.0],
+      "position": [-2.5, 0.0, -22.0],
       "rotation": [0.0, 0.0, 0.0],
       "scale": [1.05, 1.0, 1.0],
       "color": [0.5, 0.5, 0.55],
@@ -55,7 +91,7 @@
     {
       "name": "Fort Window Tower",
       "file": "Modelos3D/castle-window.obj",
-      "position": [2.5, 0.0, -16.0],
+      "position": [2.5, 0.0, -22.0],
       "rotation": [0.0, 0.0, 0.0],
       "scale": [1.0, 1.0, 1.0],
       "color": [0.48, 0.5, 0.56],
@@ -64,7 +100,7 @@
     {
       "name": "Fort Door Tower",
       "file": "Modelos3D/castle-door.obj",
-      "position": [6.8, 0.0, -16.0],
+      "position": [6.8, 0.0, -22.0],
       "rotation": [0.0, 0.0, 0.0],
       "scale": [1.0, 1.0, 1.0],
       "color": [0.46, 0.46, 0.52],
@@ -73,7 +109,7 @@
     {
       "name": "Gate Statue Pedestal",
       "file": "Modelos3D/Cube.obj",
-      "position": [-2.5, 0.35, -12.8],
+      "position": [-2.5, 0.35, -18.8],
       "rotation": [0.0, 0.0, 0.0],
       "scale": [0.75, 0.35, 0.75],
       "color": [0.38, 0.38, 0.42],
@@ -82,7 +118,7 @@
     {
       "name": "Gate Statue",
       "file": "Modelos3D/Suzanne.obj",
-      "position": [-2.5, 1.25, -12.8],
+      "position": [-2.5, 1.25, -18.8],
       "rotation": [0.0, 180.0, 0.0],
       "scale": [0.45, 0.45, 0.45],
       "color": [0.62, 0.58, 0.48],
@@ -91,7 +127,7 @@
     {
       "name": "Left Sand Rocks",
       "file": "Modelos3D/rocks-sand-a.obj",
-      "position": [-12.0, 0.0, -8.5],
+      "position": [-12.0, 0.0, -14.5],
       "rotation": [0.0, 28.0, 0.0],
       "scale": [0.75, 0.75, 0.75],
       "color": [0.72, 0.62, 0.42],
@@ -100,7 +136,7 @@
     {
       "name": "Right Sand Rocks",
       "file": "Modelos3D/rocks-sand-b.obj",
-      "position": [12.0, 0.0, -4.5],
+      "position": [10.2, 0.0, 0.1],
       "rotation": [0.0, -22.0, 0.0],
       "scale": [0.7, 0.7, 0.7],
       "color": [0.68, 0.58, 0.4],
@@ -109,16 +145,22 @@
     {
       "name": "Pirate Flagship",
       "file": "Modelos3D/ship-pirate-large.obj",
-      "position": [-7.5, 0.0, -7.5],
+      "position": [-7.5, -0.05, -7.5],
+      "trajectory": {
+        "type": "anchored"
+      },
       "rotation": [0.0, 16.0, 0.0],
-      "scale": [0.38, 0.38, 0.38],
+      "scale": [0.36, 0.36, 0.36],
       "color": [0.45, 0.18, 0.15],
       "selectedColor": [0.75, 0.25, 0.2]
     },
     {
       "name": "Merchant Ship",
       "file": "Modelos3D/ship-large.obj",
-      "position": [5.5, 0.0, -8.0],
+      "position": [5.5, -0.05, -8.0],
+      "trajectory": {
+        "type": "anchored"
+      },
       "rotation": [0.0, -14.0, 0.0],
       "scale": [0.36, 0.36, 0.36],
       "color": [0.35, 0.42, 0.55],
@@ -127,17 +169,23 @@
     {
       "name": "Ghost Ship",
       "file": "Modelos3D/ship-ghost.obj",
-      "position": [0.0, 0.0, -6.5],
-      "rotation": [0.0, 3.0, 0.0],
-      "scale": [0.32, 0.32, 0.32],
+      "position": [0.0, -0.05, -6.5],
+      "trajectory": {
+        "type": "circular",
+        "center": [0.0, 0.0, -4.5],
+        "radius": 3.0,
+        "duration": 12.0
+      },
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [0.5, 0.5, 0.5],
       "color": [0.55, 0.75, 0.78],
       "selectedColor": [0.7, 0.95, 1.0]
     },
     {
       "name": "Ship Wreck At Rocks",
       "file": "Modelos3D/ship-wreck.obj",
-      "position": [10.2, 0.0, -0.5],
-      "rotation": [0.0, -34.0, 0.0],
+      "position": [10.2, -0.05, -1.5],
+      "rotation": [-34.0, -50.0, 0.0],
       "scale": [0.34, 0.34, 0.34],
       "color": [0.4, 0.3, 0.22],
       "selectedColor": [0.65, 0.5, 0.35]
@@ -145,7 +193,10 @@
     {
       "name": "Pirate Escort",
       "file": "Modelos3D/ship-pirate-medium.obj",
-      "position": [-5.2, 0.0, 0.0],
+      "position": [-5.2, -0.05, 0.0],
+      "trajectory": {
+        "type": "anchored"
+      },
       "rotation": [0.0, -12.0, 0.0],
       "scale": [0.33, 0.33, 0.33],
       "color": [0.5, 0.22, 0.18],
@@ -154,7 +205,10 @@
     {
       "name": "Harbor Ship",
       "file": "Modelos3D/ship-medium.obj",
-      "position": [3.8, 0.0, 1.0],
+      "position": [3.8, -0.05, 1.0],
+      "trajectory": {
+        "type": "anchored"
+      },
       "rotation": [0.0, 13.0, 0.0],
       "scale": [0.32, 0.32, 0.32],
       "color": [0.34, 0.48, 0.62],
@@ -163,7 +217,10 @@
     {
       "name": "Small Pirate Boat",
       "file": "Modelos3D/ship-pirate-small.obj",
-      "position": [-10.0, 0.0, 4.0],
+      "position": [-10.0, -0.05, 4.0],
+      "trajectory": {
+        "type": "anchored"
+      },
       "rotation": [0.0, -25.0, 0.0],
       "scale": [0.3, 0.3, 0.3],
       "color": [0.55, 0.24, 0.2],
@@ -172,7 +229,10 @@
     {
       "name": "Small Harbor Boat",
       "file": "Modelos3D/ship-small.obj",
-      "position": [8.0, 0.0, 4.0],
+      "position": [8.0, -0.05, 4.0],
+      "trajectory": {
+        "type": "anchored"
+      },
       "rotation": [0.0, 20.0, 0.0],
       "scale": [0.3, 0.3, 0.3],
       "color": [0.35, 0.52, 0.65],
@@ -181,7 +241,10 @@
     {
       "name": "Long Row Boat",
       "file": "Modelos3D/boat-row-large.obj",
-      "position": [-3.5, 0.0, 6.2],
+      "position": [-3.5, -0.05, 6.2],
+      "trajectory": {
+        "type": "anchored"
+      },
       "rotation": [0.0, -32.0, 0.0],
       "scale": [1.0, 1.0, 1.0],
       "color": [0.25, 0.35, 0.48],
@@ -190,110 +253,178 @@
     {
       "name": "Dock Row Boat",
       "file": "Modelos3D/boat-row-small.obj",
-      "position": [2.0, 0.0, 6.6],
+      "position": [2.0, -0.05, 6.6],
+      "trajectory": {
+        "type": "anchored"
+      },
       "rotation": [0.0, 28.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
+      "scale": [0.8, 0.8, 0.8],
       "color": [0.28, 0.38, 0.5],
       "selectedColor": [0.35, 0.6, 0.95]
+    },
+    
+    {
+      "name": "Wooden Dock",
+      "file": "Modelos3D/structure-platform-dock.obj",
+      "position": [-8.0, 0.0, 12.5],
+      "rotation": [0.0, 90.0, 0.0],
+      "scale": [1.8, 1.0, 1.8],
+      "color": [0.45, 0.3, 0.16],
+      "selectedColor": [0.65, 0.45, 0.25]
     },
     {
       "name": "Left Shore Cannon",
       "file": "Modelos3D/cannon.obj",
-      "position": [-8.5, 0.0, 8.5],
-      "rotation": [0.0, 155.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
+      "position": [-8.0, 0.8, 11.0],
+      "rotation": [0.0, 180.0, 0.0],
+      "scale": [1, 1, 1],
       "color": [0.25, 0.25, 0.25],
       "selectedColor": [0.45, 0.45, 0.45]
     },
     {
+      "name": "Watchtower",
+      "file": "Modelos3D/tower-watch.obj",
+      "position": [-10.0, 0.0, 16.5],
+      "rotation": [0.0, 35.0, 0.0],
+      "scale": [1.5, 1.5, 1.5],
+      "color": [0.6, 0.4, 0.2],
+      "selectedColor": [0.8, 0.5, 0.3]
+    },
+    {
       "name": "Mobile Shore Cannon",
       "file": "Modelos3D/cannon-mobile.obj",
-      "position": [-5.8, 0.0, 9.0],
-      "rotation": [0.0, 150.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
+      "position": [-3.0, 0.0, 13.5],
+      "rotation": [0.0, 165.0, 0.0],
+      "scale": [1, 1, 1],
       "color": [0.32, 0.28, 0.24],
       "selectedColor": [0.55, 0.5, 0.45]
     },
     {
       "name": "Right Shore Cannon",
-      "file": "Modelos3D/cannon.obj",
-      "position": [5.8, 0.0, 9.0],
-      "rotation": [0.0, -150.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
+      "file": "Modelos3D/cannon-mobile.obj",
+      "position": [3.0, 0.0, 13.5],
+      "rotation": [0.0, -165.0, 0.0],
+      "scale": [1, 1, 1],
       "color": [0.25, 0.25, 0.25],
       "selectedColor": [0.45, 0.45, 0.45]
     },
     {
-      "name": "Cannon Ball Stack A",
+      "name": "Palmeira Sul",
+      "file": "Modelos3D/palm-detailed-bend.obj",
+      "position": [9.0, 0.0, 16.0],
+      "rotation": [0.0, -45.0, 0.0],
+      "scale": [2.0, 2.0, 2.0],
+      "color": [0.8, 0.8, 0.8],
+      "selectedColor": [1.0, 1.0, 1.0]
+    },
+    {
+      "name": "Treasure Chest",
+      "file": "Modelos3D/chest.obj",
+      "position": [8.5, -0.1, 17.5],
+      "rotation": [-30.0, -25.0, 10.0],
+      "scale": [1, 0.8, 0.8],
+      "color": [0.62, 0.38, 0.14],
+      "selectedColor": [0.95, 0.65, 0.22]
+    },
+    {
+      "name": "Shovel",
+      "file": "Modelos3D/tool-shovel.obj",
+      "position": [9.3, 0.0, 17.0],
+      "rotation": [15.0, 60.0, 0.0],
+      "scale": [0.6, 0.6, 0.6],
+      "color": [0.5, 0.5, 0.5],
+      "selectedColor": [0.7, 0.7, 0.7]
+    },
+    {
+      "name": "Supply Crate",
+      "file": "Modelos3D/crate.obj",
+      "position": [6.0, 0.0, 13.0],
+      "rotation": [0.0, 15.0, 0.0],
+      "scale": [1.5, 1.5, 1.5],
+      "color": [0.45, 0.3, 0.16],
+      "selectedColor": [0.75, 0.5, 0.25]
+    },
+    {
+      "name": "Cannon Ball Stack B",
       "file": "Modelos3D/cannon-ball.obj",
-      "position": [-7.0, 0.32, 10.3],
+      "position": [5.8, 0.3, 13.6],
       "rotation": [0.0, 0.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
+      "scale": [1, 1, 1],
       "color": [0.12, 0.12, 0.12],
       "selectedColor": [0.3, 0.3, 0.3]
     },
     {
       "name": "Cannon Ball Stack B",
       "file": "Modelos3D/cannon-ball.obj",
-      "position": [7.0, 0.32, 10.3],
+      "position": [5.8, 0.3, 13.6],
       "rotation": [0.0, 0.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
+      "scale": [1, 1, 1],
+      "color": [0.12, 0.12, 0.12],
+      "selectedColor": [0.3, 0.3, 0.3]
+    },
+    {
+      "name": "Cannon Ball Stack B",
+      "file": "Modelos3D/cannon-ball.obj",
+      "position": [6.3, 0.3, 12.7],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1, 1, 1],
       "color": [0.12, 0.12, 0.12],
       "selectedColor": [0.3, 0.3, 0.3]
     },
     {
       "name": "Cargo Barrel Left",
       "file": "Modelos3D/barrel.obj",
-      "position": [-3.6, 0.0, 12.0],
-      "rotation": [0.0, 18.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
+      "position": [10.0, 0.0, 15.5],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1, 1, 1],
       "color": [0.5, 0.28, 0.14],
       "selectedColor": [0.8, 0.45, 0.22]
     },
     {
       "name": "Cargo Barrel Right",
       "file": "Modelos3D/barrel.obj",
-      "position": [-1.8, 0.0, 12.4],
-      "rotation": [0.0, -12.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
+      "position": [8, 0.0, 15.8],
+      "rotation": [0.0, -15.0, 0.0],
+      "scale": [1, 1, 1],
       "color": [0.5, 0.28, 0.14],
       "selectedColor": [0.8, 0.45, 0.22]
     },
     {
-      "name": "Supply Crate",
-      "file": "Modelos3D/crate.obj",
-      "position": [0.0, 0.0, 12.1],
-      "rotation": [0.0, 8.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
-      "color": [0.45, 0.3, 0.16],
-      "selectedColor": [0.75, 0.5, 0.25]
-    },
-    {
-      "name": "Treasure Chest",
-      "file": "Modelos3D/chest.obj",
-      "position": [2.1, 0.0, 12.2],
-      "rotation": [0.0, -18.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
-      "color": [0.62, 0.38, 0.14],
-      "selectedColor": [0.95, 0.65, 0.22]
+      "name": "Bottle Large",
+      "file": "Modelos3D/bottle-large.obj",
+      "position": [4.6, 0.2, 15.8],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [0.7, 0.7, 0.7],
+      "color": [0.2, 0.62, 0.52],
+      "selectedColor": [0.25, 0.9, 0.75]
     },
     {
       "name": "Bottle Small",
       "file": "Modelos3D/bottle.obj",
-      "position": [3.9, 0.0, 12.0],
+      "position": [4.2, 0.2, 14.8],
       "rotation": [0.0, 0.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
+      "scale": [1, 1, 1],
       "color": [0.18, 0.55, 0.38],
       "selectedColor": [0.25, 0.85, 0.55]
     },
     {
-      "name": "Bottle Large",
-      "file": "Modelos3D/bottle-large.obj",
-      "position": [4.8, 0.0, 12.3],
+      "name": "Bala de Canhao em Voo",
+      "file": "Modelos3D/cannon-ball.obj",
+      "position": [-3.0, 0.5, 13.5],
+      "trajectory": {
+        "type": "bezier",
+        "duration": 2.5,
+        "points": [
+          [-3.0, 0.5, 13.5],
+          [-2.0, 3.0, 5.0],
+          [1.0, 3.0, -5.0],
+          [4.0, 0.0, -10.0]
+        ]
+      },
       "rotation": [0.0, 0.0, 0.0],
-      "scale": [1.0, 1.0, 1.0],
-      "color": [0.2, 0.62, 0.52],
-      "selectedColor": [0.25, 0.9, 0.75]
+      "scale": [0.8, 0.8, 0.8],
+      "color": [0.1, 0.1, 0.1],
+      "selectedColor": [0.3, 0.3, 0.3]
     }
   ]
 }
