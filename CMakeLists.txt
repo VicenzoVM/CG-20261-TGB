@@ -49,9 +49,9 @@ include_directories(${glm_SOURCE_DIR})
 include_directories(${stb_image_SOURCE_DIR})
 
 
-# Lista de pastas dos projetos (devem corresponder aos nomes dos diretórios dentro de src/)
+# 1. ALTERAÇÃO: Mudado para TrabalhoGB (Ajuste para TrabalhoGA se a sua pasta em src/ se chamar TrabalhoGA)
 set(EXERCISES
-    TrabalhoGA
+    TrabalhoGB
 )
 
 add_compile_options(-Wno-pragmas)
@@ -77,18 +77,14 @@ endif()
 
 # Cria os executáveis iterando sobre a lista de projetos
 foreach(EXERCISE ${EXERCISES})
-    # Busca automaticamente todos os arquivos .cpp e .h dentro da pasta do projeto
-    file(GLOB SOURCES "src/${EXERCISE}/*.cpp" "src/${EXERCISE}/*.h")
-    
-    # Opcional: Avisa se a pasta estiver vazia ou não existir
-    if(NOT SOURCES)
-        message(WARNING "Nenhum arquivo fonte encontrado para o projeto ${EXERCISE} em src/${EXERCISE}/")
-    endif()
-
+    # 2. ALTERAÇÃO: Adicionado CONFIGURE_DEPENDS para o CMake detectar os novos arquivos criados
+    file(GLOB SOURCES CONFIGURE_DEPENDS "src/${EXERCISE}/*.cpp" "src/${EXERCISE}/*.h")
     # Cria o executável com o nome da pasta
     add_executable(${EXERCISE} ${SOURCES} ${GLAD_C_FILE})
     
     # Configura os includes e linka as bibliotecas
     target_include_directories(${EXERCISE} PRIVATE ${CMAKE_SOURCE_DIR}/include/glad ${glm_SOURCE_DIR} ${stb_image_SOURCE_DIR})
-    target_link_libraries(${EXERCISE} glfw nlohmann_json::nlohmann_json ${OPENGL_LIBS})
+    
+    # 3. ALTERAÇÃO: Adicionado glm::glm nas bibliotecas lincadas
+    target_link_libraries(${EXERCISE} glfw nlohmann_json::nlohmann_json glm::glm ${OPENGL_LIBS})
 endforeach()
