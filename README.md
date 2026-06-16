@@ -1,6 +1,6 @@
-# Trabalho Pratico - Grau A
+# Trabalho do Grau B
 
-Leitor e visualizador de cenas 3D com OpenGL moderna. O projeto carrega modelos OBJ triangulados, exibe multiplos objetos, permite selecionar e transformar cada objeto, controla camera FPS e aplica iluminacao de Phong.
+Visualizador de uma cena 3D em OpenGL moderna. O programa carrega uma cena definida em JSON, renderiza modelos OBJ triangulados com materiais MTL e texturas, exibe multiplas luzes pontuais com iluminacao de Phong, controla uma camera em primeira pessoa e permite selecionar, transformar e animar objetos.
 
 ## Componentes
 
@@ -17,36 +17,52 @@ Leitor e visualizador de cenas 3D com OpenGL moderna. O projeto carrega modelos 
 
 ```bash
 cmake -S . -B build
-cmake --build build --target TrabalhoGA
+cmake --build build --target TrabalhoGB
 ```
 
 ## Execucao
 
-Execute a partir da pasta `build`. Por padrao, o programa carrega a cena em `../assets/cena.json`.
+O executavel gerado se chama `TrabalhoGB`. Por padrao, o programa procura a cena em `../assets/cena.json` ou `assets/cena.json`, dependendo da pasta de onde ele for executado.
 
 ```bash
 cd build
-./TrabalhoGA
+./TrabalhoGB
 ```
 
 Tambem e possivel informar outro arquivo de cena:
 
 ```bash
-./TrabalhoGA ../assets/outra_cena.json
+./TrabalhoGB ../assets/outra_cena.json
 ```
 
 ## Arquivo de cena
 
-A cena e definida em `assets/cena.json`. O arquivo contem camera, projecao/frustum, luzes e objetos. Os caminhos dos modelos sao relativos ao proprio arquivo de cena.
+A cena padrao e definida em `assets/cena.json`. Atualmente ela monta um cenario de ilha/forte pirata com oceano, areia, muralhas, navios, canhoes, bau, objetos de carga e uma bala de canhao animada. Os caminhos dos modelos sao relativos ao proprio arquivo de cena.
 
 Campos principais:
 
 - `camera`: `position`, `up`, `yaw`, `pitch`.
 - `projection`: `type`, configuracao `perspective` e configuracao `orthographic`.
-- `lights`: lista de luzes pontuais com `position` e `color`.
-- `objects`: lista de objetos com `name`, `file`, `position`, `rotation`, `scale`, `color` e `selectedColor`.
+- `lights`: lista de luzes pontuais com `type`, `position` e `color`. O shader usa ate 8 luzes.
+- `objects`: lista de objetos com `name`, `file`, `position`, `rotation`, `scale`, `color`, `selectedColor` e, opcionalmente, `trajectory`.
 
-O carregador tambem aceita alguns aliases em portugues usados na especificacao, como `arquivo`, `posicao`, `trans`, `rot`, `rotacao`, `escala` e `cor`.
+O carregador tambem aceita alguns aliases em portugues usados na especificacao, como `nome`, `arquivo`, `posicao`, `trans`, `rot`, `rotacao`, `escala`, `cor`, `corSelecionado` e `centro`.
+
+### Modelos, materiais e texturas
+
+O carregador de OBJ usa vertices (`v`), coordenadas de textura (`vt`), normais (`vn`), bibliotecas de material (`mtllib`) e troca de material (`usemtl`). As faces precisam estar trianguladas; faces com mais ou menos de tres vertices sao ignoradas.
+
+Arquivos MTL podem definir `Ka`, `Kd`, `Ks`, `Ns` e `map_Kd`. Quando ha textura difusa (`map_Kd`), ela e aplicada ao objeto; caso contrario, o programa usa `color` ou `selectedColor` do JSON.
+
+### Trajetorias
+
+Objetos podem ter uma propriedade `trajectory`:
+
+- `type: "anchored"`: aplica uma oscilacao leve de altura, pitch e roll, usada nos barcos ancorados.
+- `type: "circular"`: move o objeto em torno de `center` com `radius` e `duration`.
+- `type: "bezier"`: move o objeto por uma curva Bezier usando `points` e `duration`.
+
+Objetos animados por trajetoria circular ou Bezier tambem ajustam a rotacao no eixo Y para acompanhar a direcao do movimento.
 
 ## Controles
 
@@ -69,10 +85,8 @@ O carregador tambem aceita alguns aliases em portugues usados na especificacao, 
 - `3` / `4`: aumenta ou diminui a escala no eixo Y.
 - `5` / `6`: aumenta ou diminui a escala no eixo Z.
 
-### Visualizacao, luz e material
+### Visualizacao e luz
 
 - `F`: liga/desliga o wireframe sobreposto ao solido.
-- `Shift + setas`: move a luz pontual nos eixos X e Y.
-- `Shift + O` / `Shift + L`: move a luz pontual no eixo Z.
-- `B`: alterna o parametro de material selecionado na ordem `ka`, `kd`, `ks`, `q`; o parametro selecionado aparece no titulo da janela.
-- `N` / `M`: diminui ou aumenta o parametro de material selecionado e atualiza o valor no titulo da janela.
+- `Shift + setas`: move a primeira luz pontual nos eixos X e Y.
+- `Shift + O` / `Shift + L`: move a primeira luz pontual no eixo Z.
